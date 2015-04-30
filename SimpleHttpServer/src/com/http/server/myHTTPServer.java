@@ -214,7 +214,7 @@ public class myHTTPServer extends Thread {
 
 
 	
-	/*public static void main(String args[]) throws Exception {
+	public static void main(String args[]) throws Exception {
 		/*ResourceManager.getInstance().init("C:\\Users\\Lenovo\\Desktop\\conf.xml");
         Thread serv = new Thread(ServiceEngine.IDLE);
         serv.start();
@@ -229,10 +229,10 @@ public class myHTTPServer extends Thread {
 			s.start();
 			
 			//(new myHTTPServer(connected)).start();
-		}
+		}*/
 	
 	startServer();	
-	}*/
+	}
 	
 	public static void  startServer()throws Exception{
 
