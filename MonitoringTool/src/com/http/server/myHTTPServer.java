@@ -4,6 +4,9 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
+import android.app.Service;
+import android.content.res.AssetManager;
+
 import com.config.resources.ResourceManager;
 import com.services.core.EventCodes;
 import com.services.core.ServiceEngine;
@@ -234,9 +237,9 @@ public class myHTTPServer extends Thread {
 	startServer();	
 	}*/
 	
-	public static void  startServer()throws Exception{
+	public static void  startServer(File config)throws Exception{
 
-		ResourceManager.getInstance().init("C:\\Users\\Lenovo\\Desktop\\conf.xml");
+		ResourceManager.getInstance().init(config);
         Thread serv = new Thread(ServiceEngine.IDLE);
         serv.start();
         

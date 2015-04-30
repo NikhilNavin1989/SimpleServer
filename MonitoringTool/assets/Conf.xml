@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<company>
+	<Resource id="1001">
+		<pathname>/data/montly</pathname>
+		<classname>com.application.services.DataService</classname>
+	</Resource>
+	<Resource id="2001">
+		<pathname></pathname>
+		<classname>com.application.services.DataService</classname>
+	</Resource>
+</company>
