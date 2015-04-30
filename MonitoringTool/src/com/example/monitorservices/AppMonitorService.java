@@ -45,7 +45,9 @@ public class AppMonitorService extends Service {
 		Toast.makeText(this, "servicestarted", Toast.LENGTH_LONG).show();
 		try {
 			myHTTPServer.startServer(CopyReadAssets());
-			monitor();
+			//simplywait();
+			//myHTTPServer.stopServer();
+			//monitor();
 		} catch (NameNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -57,6 +59,19 @@ public class AppMonitorService extends Service {
 			e.printStackTrace();
 		}
 	return super.onStartCommand(intent, flags, startId);
+	}
+
+	private void simplywait() {
+		
+		while(myHTTPServer.requestcount < 3){
+			try {
+				Thread.sleep(100);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		
 	}
 
 	@Override

@@ -24,6 +24,9 @@ public class myHTTPServer extends Thread {
 	Socket connectedClient = null;
 	BufferedReader inFromClient = null;
 	DataOutputStream outToClient = null;
+	static Thread MainThread=null;
+	static Thread ServiceEngineThread=null;
+	static ServiceEngine sengine;
 	public static int requestcount=0;
 
 	public myHTTPServer(Socket client) {
@@ -237,13 +240,18 @@ public class myHTTPServer extends Thread {
 	startServer();	
 	}*/
 	
+	public static void stopServer(){
+		ServiceEngineThread.stop();
+		MainThread.stop();
+	}
+	
 	public static void  startServer(File config)throws Exception{
 
 		ResourceManager.getInstance().init(config);
-        Thread serv = new Thread(ServiceEngine.IDLE);
-        serv.start();
+        ServiceEngineThread = new Thread(ServiceEngine.IDLE);
+        ServiceEngineThread.start();
         
-        Thread httpserv = new Thread(new Runnable() {
+        MainThread = new Thread(new Runnable() {
 			
 			@Override
 			public void run() {
@@ -271,7 +279,7 @@ public class myHTTPServer extends Thread {
 			}
 		});
         
-        httpserv.start();
+        MainThread.start();
         
 
 	
