@@ -19,7 +19,7 @@ import com.services.core.ServiceRequest;
 public class DataService implements Iservice{
 	
 	@Override
-	public void handle(ServiceRequest request) {
+	public void handleGet(ServiceRequest request) {
 		System.out.println("Handling the uri "+request.getPayload().getProperty("id"));
 		request.setResponse("Data Service Activated");
 		ApplicationInfoData app = new ApplicationInfoData();
@@ -47,5 +47,11 @@ public class DataService implements Iservice{
 			e.printStackTrace();
 		}
 		
+	}
+
+	@Override
+	public void handlePost(ServiceRequest request) {
+		System.out.println("Handling the uri "+request.getPayload().getProperty("data"));
+		request.setResponse("Data Service Activated");
 	}
 }

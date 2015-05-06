@@ -27,6 +27,14 @@ public class myHTTPServer extends Thread {
 		connectedClient = client;
 	}
 	
+	
+	public Properties printPostParams(String[] data){
+		
+		Properties p = new Properties();
+		p.put("data",data[data.length-1]);
+		return p;
+	}
+	
 	public Properties printallQueryPrams(String queryline){
 		
 		
@@ -45,16 +53,15 @@ public class myHTTPServer extends Thread {
 		return qparams;
 	}
 	
-	public void prinall(String line) throws Exception{
+	public void prinall(String line,String[] reqdata) throws Exception{
+		System.out.println("## nikhil "+line);
 		StringTokenizer tokenizer = new StringTokenizer(line);
 		String verb = tokenizer.nextToken();
-		 
+		String resourcepath = tokenizer.nextToken();
+		ServiceRequest request=null;
 		if(verb.equals("GET")){
 			EventCodes event = EventCodes.GET;
-			String resourcepath = tokenizer.nextToken();
-			
 			StringTokenizer querypattern = new StringTokenizer(resourcepath,"?");
-			ServiceRequest request=null;
 			String queryparams=null;
 			if(!(querypattern.countTokens() == 1)){
 				System.out.println("QUERY PARAM IS "+resourcepath);
@@ -67,21 +74,24 @@ public class myHTTPServer extends Thread {
 				request = new ServiceRequest(event,resourcepath,printallQueryPrams(queryparams),requestcount++);
 			}
 			
+		}
+		else if(verb.equals("POST")){
+			EventCodes event = EventCodes.POST;
+			request = new ServiceRequest(event,resourcepath,printPostParams(reqdata),requestcount++);
+			System.out.println("##################3 this is a post request :"+tokenizer.nextToken());
+		}
+		
+		boolean isadded = ServiceRequestQueue.getInstance().addRequest(request);
+		System.out.println("Request added "+isadded);
+		if(isadded){
 			
-			
-			boolean isadded = ServiceRequestQueue.getInstance().addRequest(request);
-			System.out.println("Request added "+isadded);
-			if(isadded){
+			while(ServiceResponseQueue.getInstance().getResponse(request.getRequestId()) == null){
 				
-				while(ServiceResponseQueue.getInstance().getResponse(request.getRequestId()) == null){
-					
-					sleep(10);
-					System.out.println("sleeeping.........................");
-				}
-				System.out.println("Sending response "+request.getResponse());
-				sendResponse(200,request.getResponse(),false);
+				sleep(10);
+				System.out.println("sleeeping.........................");
 			}
-
+			System.out.println("Sending response "+request.getResponse());
+			sendResponse(200,request.getResponse(),false);
 		}
 		
 	}
@@ -140,13 +150,16 @@ public class myHTTPServer extends Thread {
 
 			System.out.println("The Client " + connectedClient.getInetAddress()
 					+ ":" + connectedClient.getPort() + " is connected");
-
+            char[] buff = new char[2084];
 			inFromClient = new BufferedReader(new InputStreamReader(
 					connectedClient.getInputStream()));
 			outToClient = new DataOutputStream(
 					connectedClient.getOutputStream());
-			String header =inFromClient.readLine();
-			prinall(header);
+			
+			inFromClient.read(buff);
+		    String[] reqdata = new String(buff).split("\\n");
+		    String header =reqdata[0];
+		    prinall(header,reqdata);
 			//sendResponse(200,"accepted",false);
 			 
 			//System.out.println("#########main continues");

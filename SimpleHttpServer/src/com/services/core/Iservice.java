@@ -9,7 +9,7 @@ import java.util.Properties;
 public interface Iservice {
 
 	
-	public void handle(ServiceRequest request);
+	public void handleGet(ServiceRequest request);
 	
-	
+	public void handlePost(ServiceRequest request);
 }
