@@ -9,14 +9,14 @@ public enum HttpMethodStates {
 		@Override
 		void handle(ServiceRequest request) {
 			System.out.println("Handling GET Request ..........."+request.getResource());
-			EngineServiceFactory.getService(request.getResource()).handle(request);
+			EngineServiceFactory.getService(request.getResource()).handleGet(request);
 			
 		}
 	},POST {
 		@Override
 		void handle(ServiceRequest request) {
 			System.out.println("Handling Post Request ...........");
-			
+			EngineServiceFactory.getService(request.getResource()).handlePost(request);
 			
 		}
 	};
