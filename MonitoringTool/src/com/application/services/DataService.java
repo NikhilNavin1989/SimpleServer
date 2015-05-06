@@ -48,10 +48,9 @@ public class DataService implements Iservice{
 		}
 		
 	}
-
 	@Override
 	public void handlePost(ServiceRequest request) {
-		// TODO Auto-generated method stub
-		
+		System.out.println("Handling the uri "+request.getPayload().getProperty("data"));
+		request.setResponse("Data Service Activated");
 	}
 }

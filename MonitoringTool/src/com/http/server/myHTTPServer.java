@@ -24,80 +24,91 @@ public class myHTTPServer extends Thread {
 	Socket connectedClient = null;
 	BufferedReader inFromClient = null;
 	DataOutputStream outToClient = null;
-	static Thread MainThread=null;
-	static Thread ServiceEngineThread=null;
+	static Thread MainThread = null;
+	static Thread ServiceEngineThread = null;
 	static ServiceEngine sengine;
-	public static int requestcount=0;
+	public static int requestcount = 0;
 
 	public myHTTPServer(Socket client) {
 		connectedClient = client;
 	}
-	
-	public Properties printallQueryPrams(String queryline){
-		
-		
-		System.out.println("Query line "+queryline);
+
+	public Properties printPostParams(String[] data) {
+
+		Properties p = new Properties();
+		p.put("data", data[data.length - 1]);
+		return p;
+	}
+
+	public Properties printallQueryPrams(String queryline) {
+
+		System.out.println("Query line " + queryline);
 		Properties qparams = new Properties();
-		if(queryline != null){
-		StringTokenizer params = new StringTokenizer(queryline, "&");
-		while(params.hasMoreElements()){
-			String keyvalue =params.nextToken();
-			StringTokenizer kv = new StringTokenizer(keyvalue, "=");
-			String key=kv.nextToken();
-			String val = kv.nextToken();
-			qparams.put(key, val);
-		}
+		if (queryline != null) {
+			StringTokenizer params = new StringTokenizer(queryline, "&");
+			while (params.hasMoreElements()) {
+				String keyvalue = params.nextToken();
+				StringTokenizer kv = new StringTokenizer(keyvalue, "=");
+				String key = kv.nextToken();
+				String val = kv.nextToken();
+				qparams.put(key, val);
+			}
 		}
 		return qparams;
 	}
-	
-	public void prinall(String line) throws Exception{
+
+	public void prinall(String line, String[] reqdata) throws Exception {
+		System.out.println("## nikhil " + line);
 		StringTokenizer tokenizer = new StringTokenizer(line);
 		String verb = tokenizer.nextToken();
-		 
-		if(verb.equals("GET")){
+		String resourcepath = tokenizer.nextToken();
+		ServiceRequest request = null;
+		if (verb.equals("GET")) {
 			EventCodes event = EventCodes.GET;
-			String resourcepath = tokenizer.nextToken();
-			
-			StringTokenizer querypattern = new StringTokenizer(resourcepath,"?");
-			ServiceRequest request=null;
-			String queryparams=null;
-			if(!(querypattern.countTokens() == 1)){
-				System.out.println("QUERY PARAM IS "+resourcepath);
+			StringTokenizer querypattern = new StringTokenizer(resourcepath,
+					"?");
+			String queryparams = null;
+			if (!(querypattern.countTokens() == 1)) {
+				System.out.println("QUERY PARAM IS " + resourcepath);
 				resourcepath = querypattern.nextToken();
 				queryparams = querypattern.nextToken();
-				request = new ServiceRequest(event,resourcepath,printallQueryPrams(queryparams),requestcount++);
-			}
-			else{
-				
-				request = new ServiceRequest(event,resourcepath,printallQueryPrams(queryparams),requestcount++);
-			}
-			
-			
-			
-			boolean isadded = ServiceRequestQueue.getInstance().addRequest(request);
-			System.out.println("Request added "+isadded);
-			if(isadded){
-				
-				while(ServiceResponseQueue.getInstance().getResponse(request.getRequestId()) == null){
-					
-					sleep(10);
-					System.out.println("sleeeping.........................");
-				}
-				System.out.println("Sending response "+request.getResponse());
-				sendResponse(200,request.getResponse(),false);
+				request = new ServiceRequest(event, resourcepath,
+						printallQueryPrams(queryparams), requestcount++);
+			} else {
+
+				request = new ServiceRequest(event, resourcepath,
+						printallQueryPrams(queryparams), requestcount++);
 			}
 
+		} else if (verb.equals("POST")) {
+			EventCodes event = EventCodes.POST;
+			request = new ServiceRequest(event, resourcepath,
+					printPostParams(reqdata), requestcount++);
+			System.out.println("##################3 this is a post request :"
+					+ tokenizer.nextToken());
 		}
-		
+
+		boolean isadded = ServiceRequestQueue.getInstance().addRequest(request);
+		System.out.println("Request added " + isadded);
+		if (isadded) {
+
+			while (ServiceResponseQueue.getInstance().getResponse(
+					request.getRequestId()) == null) {
+
+				sleep(10);
+				System.out.println("sleeeping.........................");
+			}
+			System.out.println("Sending response " + request.getResponse());
+			sendResponse(200, request.getResponse(), false);
+		}
+
 	}
 
-	
-	public void handle(String headerLine) throws Exception{
-		
+	public void handle(String headerLine) throws Exception {
+
 		String requestString = headerLine;
-		
-        StringTokenizer tokenizer = new StringTokenizer(headerLine);
+
+		StringTokenizer tokenizer = new StringTokenizer(headerLine);
 		String httpMethod = tokenizer.nextToken();
 		String httpQueryString = tokenizer.nextToken();
 
@@ -106,11 +117,11 @@ public class myHTTPServer extends Thread {
 				.append("<b> This is the HTTP Server Home Page.... </b><BR>");
 		responseBuffer.append("The HTTP Client request is ....<BR>");
 
-		//System.out.println("The HTTP request string is ....");
+		// System.out.println("The HTTP request string is ....");
 		while (inFromClient.ready()) {
 			// Read the HTTP complete HTTP Query
 			responseBuffer.append(requestString + "<BR>");
-			//System.out.println(requestString);
+			// System.out.println(requestString);
 			requestString = inFromClient.readLine();
 		}
 
@@ -138,27 +149,31 @@ public class myHTTPServer extends Thread {
 					"<b>The Requested resource not found ...."
 							+ "Usage: http://127.0.0.1:5000 or http://127.0.0.1:5000/</b>",
 					false);
-	
+
 	}
+
 	public void run() {
 
 		try {
 
 			System.out.println("The Client " + connectedClient.getInetAddress()
 					+ ":" + connectedClient.getPort() + " is connected");
-
+			char[] buff = new char[2084];
 			inFromClient = new BufferedReader(new InputStreamReader(
 					connectedClient.getInputStream()));
 			outToClient = new DataOutputStream(
 					connectedClient.getOutputStream());
-			String header =inFromClient.readLine();
-			prinall(header);
-			//sendResponse(200,"accepted",false);
-			 
-			//System.out.println("#########main continues");
-			//handle(header);
 
-			} catch (Exception e) {
+			inFromClient.read(buff);
+			String[] reqdata = new String(buff).split("\\n");
+			String header = reqdata[0];
+			prinall(header, reqdata);
+			// sendResponse(200,"accepted",false);
+
+			// System.out.println("#########main continues");
+			// handle(header);
+
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
@@ -218,70 +233,63 @@ public class myHTTPServer extends Thread {
 		fin.close();
 	}
 
+	/*
+	 * public static void main(String args[]) throws Exception {
+	 * /*ResourceManager
+	 * .getInstance().init("C:\\Users\\Lenovo\\Desktop\\conf.xml"); Thread serv
+	 * = new Thread(ServiceEngine.IDLE); serv.start(); ServerSocket Server = new
+	 * ServerSocket(5001, 10, InetAddress.getByName("192.168.75.1"));
+	 * System.out.println("TCPServer Waiting for client on port 5001"); while
+	 * (true) { Socket connected = Server.accept();
+	 * System.out.println("Accepted..........................."); myHTTPServer s
+	 * = new myHTTPServer(connected); s.start();
+	 * 
+	 * //(new myHTTPServer(connected)).start(); }
+	 * 
+	 * startServer(); }
+	 */
 
-	
-	/*public static void main(String args[]) throws Exception {
-		/*ResourceManager.getInstance().init("C:\\Users\\Lenovo\\Desktop\\conf.xml");
-        Thread serv = new Thread(ServiceEngine.IDLE);
-        serv.start();
-		ServerSocket Server = new ServerSocket(5001, 10,
-				InetAddress.getByName("192.168.75.1"));
-		System.out.println("TCPServer Waiting for client on port 5001");
-
-		while (true) {
-			Socket connected = Server.accept();
-			System.out.println("Accepted...........................");
-			myHTTPServer s = new myHTTPServer(connected);
-			s.start();
-			
-			//(new myHTTPServer(connected)).start();
-		}
-	
-	startServer();	
-	}*/
-	
-	public static void stopServer(){
+	public static void stopServer() {
 		ServiceEngineThread.stop();
 		MainThread.stop();
 	}
-	
-	public static void  startServer(File config)throws Exception{
+
+	public static void startServer(File config) throws Exception {
 
 		ResourceManager.getInstance().init(config);
-        ServiceEngineThread = new Thread(ServiceEngine.IDLE);
-        ServiceEngineThread.start();
-        
-        MainThread = new Thread(new Runnable() {
-			
+		ServiceEngineThread = new Thread(ServiceEngine.IDLE);
+		ServiceEngineThread.start();
+
+		MainThread = new Thread(new Runnable() {
+
 			@Override
 			public void run() {
-				ServerSocket Server=null;
+				ServerSocket Server = null;
 				try {
-					
-					Server = new ServerSocket(5001, 10,InetAddress.getByName("127.0.0.1"));
-					
-				 
-				System.out.println("TCPServer Waiting for client on port 5001");
 
-				while (true) {
-					Socket connected = Server.accept();
-					System.out.println("Accepted...........................");
-					myHTTPServer s = new myHTTPServer(connected);
-					s.start();
-					
-					//(new myHTTPServer(connected)).start();
-				}
-			}
-				catch (IOException e) {
+					Server = new ServerSocket(5001, 10, InetAddress
+							.getByName("127.0.0.1"));
+
+					System.out
+							.println("TCPServer Waiting for client on port 5001");
+
+					while (true) {
+						Socket connected = Server.accept();
+						System.out
+								.println("Accepted...........................");
+						myHTTPServer s = new myHTTPServer(connected);
+						s.start();
+
+						// (new myHTTPServer(connected)).start();
+					}
+				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}
 		});
-        
-        MainThread.start();
-        
 
-	
+		MainThread.start();
+
 	}
 }
