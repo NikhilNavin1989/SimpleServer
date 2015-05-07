@@ -11,7 +11,7 @@ public class TimeEventData {
 	
 	private List<NetworkData> networkdatalist;
 	private int _id;
-	private Date time;
+	private String time;
 	public List<NetworkData> getNetworkdatalist() {
 		return networkdatalist;
 	}
@@ -25,10 +25,10 @@ public class TimeEventData {
 		this._id = _id;
 	}
 	public String getTime() {
-		DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-		return dateFormat.format(time);
+		
+		return time;
 	}
-	public void setTime(Date time) {
+	public void setTime(String time) {
 		this.time = time;
 	}
 
