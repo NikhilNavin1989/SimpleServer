@@ -7,7 +7,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
-public class TimeEventData {
+public class TimeEventData implements DataModelInterface{
 	
 	private List<NetworkData> networkdatalist;
 	private int _id;

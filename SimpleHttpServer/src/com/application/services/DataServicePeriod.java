@@ -10,6 +10,8 @@ import java.util.Properties;
 import com.application.datamodel.ApplicationInfoData;
 import com.application.datamodel.NetworkData;
 import com.application.datamodel.TimeEventData;
+import com.db.DaoManager;
+import com.db.DatabaseAccess;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.services.core.ServiceRequest;
@@ -22,13 +24,9 @@ public class DataServicePeriod extends DataService {
         String fromtime = request.getPayload().getProperty("from");
         String to = request.getPayload().getProperty("to");
         System.out.println("Handling for a Month  from :"+fromtime+"     to:"+to);
-
+        DaoManager dao = new DaoManager(new DatabaseAccess());
+        List<NetworkData> tlist = dao.getNetworkdata(fromtime, to);
 		
-		
-		List<TimeEventData> tlist = new ArrayList<>();
-		tlist.add(dummy());
-		tlist.add(dummy());
-		tlist.add(dummy());
 		ObjectMapper mapper = new ObjectMapper();
 		try {
 			request.setResponse(mapper.writeValueAsString(tlist));

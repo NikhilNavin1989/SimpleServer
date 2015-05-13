@@ -1,6 +1,6 @@
 package com.application.datamodel;
 
-public class NetworkData {
+public class NetworkData implements DataModelInterface{
 	
 	private int id;
 	private int type;

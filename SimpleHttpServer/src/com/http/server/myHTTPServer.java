@@ -5,6 +5,7 @@ import java.net.*;
 import java.util.*;
 
 import com.config.resources.ResourceManager;
+import com.db.DatabaseAccess;
 import com.services.core.EventCodes;
 import com.services.core.ServiceEngine;
 import com.services.core.ServiceRequest;
@@ -250,6 +251,7 @@ public class myHTTPServer extends Thread {
 	public static void  startServer()throws Exception{
 
 		ResourceManager.getInstance().init("C:\\Users\\Lenovo\\Desktop\\conf.xml");
+		DatabaseAccess.createDB("jdbc:sqlite:C://Users//Lenovo//Documents//understanding//myjava//Application//db//Monitordb.db");
         Thread serv = new Thread(ServiceEngine.IDLE);
         serv.start();
         

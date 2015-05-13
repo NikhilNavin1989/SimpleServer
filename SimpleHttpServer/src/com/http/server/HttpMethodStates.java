@@ -15,7 +15,7 @@ public enum HttpMethodStates {
 	},POST {
 		@Override
 		void handle(ServiceRequest request) {
-			System.out.println("Handling Post Request ...........");
+			System.out.println("Handling Post Request ..........."+request.getResource());
 			EngineServiceFactory.getService(request.getResource()).handlePost(request);
 			
 		}

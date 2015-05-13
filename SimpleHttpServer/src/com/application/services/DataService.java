@@ -13,12 +13,15 @@ import com.application.datamodel.ApplicationInfoData;
 import com.application.datamodel.Data;
 import com.application.datamodel.NetworkData;
 import com.application.datamodel.TimeEventData;
+import com.db.DaoManager;
+import com.db.DatabaseAccess;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.services.core.Iservice;
 import com.services.core.ServiceRequest;
+import com.fasterxml.jackson.core.JsonParser;
 
 public class DataService implements Iservice{
 	
@@ -41,9 +44,15 @@ public class DataService implements Iservice{
 	public void handlePost(ServiceRequest request) {
 		System.out.println("Handling the uri "+request.getPayload().getProperty("data"));
 		ObjectMapper mapper = new ObjectMapper();
+		mapper.configure(JsonParser.Feature.ALLOW_UNQUOTED_FIELD_NAMES, true);
 		try {
-			TimeEventData tdata = mapper.readValue(request.getPayload().getProperty("data"),TimeEventData.class);
-			System.out.println("## object created "+tdata.getTime());
+			TimeEventData[] tdata = mapper.readValue(request.getPayload().getProperty("data"),TimeEventData[].class);
+			//TimeEventData td = mapper.readValue(tdata[0].toString(),TimeEventData.class);
+			for(int i=0;i<tdata.length;i++){
+				System.out.println("## object created "+tdata[i].getTime());
+				DaoManager m = new DaoManager(new DatabaseAccess());
+				m.Insert(tdata[i]);
+			}
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

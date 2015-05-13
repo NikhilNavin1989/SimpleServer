@@ -1,6 +1,6 @@
 package com.application.datamodel;
 
-public class ApplicationInfoData {
+public class ApplicationInfoData implements DataModelInterface{
 	
 	private int id;
 	private String name;
