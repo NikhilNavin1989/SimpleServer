@@ -1,5 +1,10 @@
 package com.db;
 
+/**  author:Nikhil
+ * This is a database connection class Every Service Request
+ * creates a new instance of this class to connect to db
+ */
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -11,11 +16,10 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Properties;
 import java.util.Random;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.Set;
 
 import com.application.datamodel.ApplicationInfoData;
 import com.application.datamodel.NetworkData;
@@ -25,13 +29,27 @@ public class DatabaseAccess implements DbConnection {
 
 	private static String db="";
 	private Connection connection ;
-    private static HashMap<String,Integer> timeIdMap = new HashMap<>(); 
-    private static HashMap<String,Integer> AppIdMap = new HashMap<>(); 
-	private static boolean created = false;
+	
+	// a Trivial cache, can be changed to LRU
+    private static volatile HashMap<String,Integer> timeIdMap = new HashMap<>(); 
+    private static volatile HashMap<String,Integer> AppIdMap = new HashMap<>(); 
+	
+    
+    private static volatile Set<Integer> timeidset = new HashSet<>();
+    //This variable indiacates if DB is already present,better approach can be used
+    private static boolean created = false;
+    
+    //This is used to generate random number id for primary key
 	private static Random ran = new Random();
 	private static Random appran = new Random();
 	
-	private PreparedStatement addTimeevent,addNetworkData,addApp,getNetwork,getNetworkPeriod,gettimeDataID,gettimeDataPeriod;
+	private PreparedStatement addTimeevent,
+	addNetworkData,
+	addApp,
+	getNetwork,
+	getNetworkPeriod,
+	gettimeDataID,
+	gettimeDataPeriod;
 	
 	{
 		
@@ -55,21 +73,17 @@ public class DatabaseAccess implements DbConnection {
 	}
 	
 	
-	public  static boolean createDB(String Path){
-		
-		if(!created){
-			try {
-				db=Path;//"jdbc:sqlite:C://Users//Lenovo//Documents//understanding//myjava//Application//db//mydb.db";
-				init();
-				created=true;
-				return true;
-				
-			} catch (Exception e) {
-				// TODO: handle exception
-			}
+	public static boolean createDB(String Path) {
 
+		try {
+			db = Path;// "jdbc:sqlite:C://Users//Lenovo//Documents//understanding//myjava//Application//db//mydb.db";
+			init();
+            return true;
+
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
-		
+
 		return false;
 	}
 	
@@ -79,21 +93,30 @@ public class DatabaseAccess implements DbConnection {
 		Connection connection = DriverManager.getConnection(db);
 		if(! created){
 			Statement s = connection.createStatement();
-			s.executeUpdate("CREATE TABLE timeEvent_  (eid_ int,time timestamp)");
-			s.executeUpdate("CREATE TABLE AppData_  (aid_ int,name varchar(200))");
-			s.executeUpdate("CREATE TABLE networkdata_  (nid_  int,timeid_ int ,appid_ int ,nettype int,upload int,download int,FOREIGN KEY(timeid_) REFERENCES timeEvent_(eid_),FOREIGN KEY(appid_) REFERENCES AppData_(aid_))");
+			s.executeUpdate("CREATE TABLE timeEvent_  (eid_ int AUTO_INCREMENT,time timestamp unique , primary key(eid_))");
+			s.executeUpdate("CREATE TABLE AppData_  (aid_ int,name varchar(200),primary key(aid_))");
+			s.executeUpdate("CREATE TABLE networkdata_  (timeid_ int ,appid_ int ,nettype int,upload int,download int,FOREIGN KEY(timeid_) REFERENCES timeEvent_(eid_),FOREIGN KEY(appid_) REFERENCES AppData_(aid_),primary key(timeid_,appid_))");
 			System.out.println("created table succesfully");
 			}
+		
+		for(int i=0;i<10;i++){
+			ApplicationInfoData app = new ApplicationInfoData();
+			app.setId(i);
+			app.setName("APP_name_"+i);
+			new DatabaseAccess().addAPP(app);
+			AppIdMap.put("APP_name_"+i, new Integer(i));
+			
+		}
 		
 	}
 
 	private void createpreparedstatement() throws Exception {
 		
-		addTimeevent = connection.prepareStatement("INSERT INTO timeEvent_ (eid_ ,time) VALUES (?,?)");
-		addNetworkData = connection.prepareStatement("INSERT INTO networkdata_ (nid_ ,timeid_,appid_,nettype,upload,download) VALUES (?,?,?,?,?,?)");
+		addTimeevent = connection.prepareStatement("INSERT INTO timeEvent_ (time) VALUES (?)",Statement.RETURN_GENERATED_KEYS);
+		addNetworkData = connection.prepareStatement("INSERT INTO networkdata_ (timeid_,appid_,nettype,upload,download) VALUES ((select eid_ from timeEvent_ where time = ?),?,?,?,?)");
 		addApp = connection.prepareStatement("INSERT INTO AppData_ (aid_ ,name) VALUES (?,?)");
 		getNetwork= connection.prepareStatement("SELECT *  FROM networkdata_  WHERE timeid_ = ?");
-		getNetworkPeriod = connection.prepareStatement("SELECT time,nettype,appid_,upload,download  FROM timeEvent_ INNER JOIN networkdata_ on  timeEvent_.eid_ = networkdata_.timeid_ and timeEvent_.time > ?");
+		getNetworkPeriod = connection.prepareStatement("SELECT time,nettype,appid_,upload,download  FROM timeEvent_ INNER JOIN networkdata_ on  timeEvent_.eid_ = networkdata_.timeid_ and timeEvent_.time between ? and ?");
 		//getphototag= connection.prepareStatement("SELECT pid_  FROM (SELECT *  FROM photo_ INNER JOIN tag_   ON photo_.pid_ = tag_.imageid_) WHERE tagname_ IN []");
 	}
 
@@ -102,21 +125,24 @@ public class DatabaseAccess implements DbConnection {
 
 	@Override
 	public void addTimeEvent(TimeEventData time) throws Exception {
-		Integer pid = ran.nextInt();//time.get_id();// hav a generator here
-		
+		Integer pid = ran.nextInt(1000000);//time.get_id();// hav a generator here
+		while(!timeidset.add(pid)){
+			
+			pid = ran.nextInt(1000000);
+		}
 		String timeinfo = time.getTime();
 		
 		Timestamp timestamp=null;
 		try{
 		    SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
 		    Date parsedDate = dateFormat.parse(timeinfo);
-		     timestamp = new java.sql.Timestamp(parsedDate.getTime());
+		    timestamp = new java.sql.Timestamp(parsedDate.getTime());
 		}catch(Exception e){//this generic but you can control another types of exception
 		 
 			e.printStackTrace();
 		}
-		addTimeevent.setInt(1, pid);
-		addTimeevent.setTimestamp(2,timestamp);
+		//addTimeevent.setInt(1, pid);
+		addTimeevent.setTimestamp(1,timestamp);
 		addTimeevent.execute();
 		timeIdMap.put(timeinfo, pid);
 		System.out.println("added photo succesfully");
@@ -125,21 +151,28 @@ public class DatabaseAccess implements DbConnection {
 	
 	
 	@Override
-	public void addNetworkEvent(NetworkData n,int tid) throws Exception {
+	public void addNetworkEvent(NetworkData n,String time) throws Exception {
 		
-		
+		Timestamp timestamp=null;
+		try{
+		    SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
+		    Date parsedDate = dateFormat.parse(time);
+		    timestamp = new java.sql.Timestamp(parsedDate.getTime());
+		}catch(Exception e){//this generic but you can control another types of exception
+		 
+			e.printStackTrace();
+		}
 			
 			int nid = n.getId();
 			int appid =getAppid(n.getAppid().getName());
 			long upload = n.getUpload();
 			long download = n.getDownload();
 			int type = n.getType();
-			addNetworkData.setInt(1, nid);
-			addNetworkData.setInt(2,tid);
-			addNetworkData.setInt(3,appid);
-			addNetworkData.setInt(4,type);
-			addNetworkData.setLong(5,upload);
-			addNetworkData.setLong(6,download);
+			addNetworkData.setTimestamp(1,timestamp);
+			addNetworkData.setInt(2,appid);
+			addNetworkData.setInt(3,type);
+			addNetworkData.setLong(4,upload);
+			addNetworkData.setLong(5,download);
 			addNetworkData.execute();
 			System.out.println("added photo succesfully");
 		
@@ -179,19 +212,22 @@ public class DatabaseAccess implements DbConnection {
 	
 	public List<NetworkData> getNetworkData(String start,String end) throws SQLException{
 		List<NetworkData> result = new ArrayList<>();
-		Timestamp timestamp=null;
+		Timestamp starttimestamp=null;
+		Timestamp endtimestamp=null;
 		
 		try{
 		    SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
 		    Date parsedDate = dateFormat.parse(formatdate(start));
-		     timestamp = new java.sql.Timestamp(parsedDate.getTime());
+		     starttimestamp = new java.sql.Timestamp(parsedDate.getTime());
+		     parsedDate = dateFormat.parse(formatdate(end));
+		     endtimestamp = new java.sql.Timestamp(parsedDate.getTime());
 		}catch(Exception e){//this generic but you can control another types of exception
 		 
 			e.printStackTrace();
 		}
 		
-		getNetworkPeriod.setTimestamp(1,timestamp);
-		
+		getNetworkPeriod.setTimestamp(1,starttimestamp);
+		getNetworkPeriod.setTimestamp(2,endtimestamp);
 		ResultSet rs=getNetworkPeriod.executeQuery();
 		int c =0;
 		
@@ -264,16 +300,21 @@ public class DatabaseAccess implements DbConnection {
 	    }
 	}
 	
-	public static  Integer getTimeId(String time ){
-		
+	public static Integer getTimeId(String time) {
+
+		if (!timeIdMap.containsKey(time)) {
+
+			return -1;
+		}
 		return timeIdMap.get(time);
+
 	}
 	
 	public static Integer getAppid(String appname){
 		
 		       if(!AppIdMap.containsKey(appname)){
 		    	   
-		    	   AppIdMap.put(appname,appran.nextInt());
+		    	   return -1;
 		       }
 				return AppIdMap.get(appname);
 	}

@@ -27,7 +27,7 @@ public class NetworkDao {
 			try {
 				for(NetworkData n : netlist){
 					System.out.println("#########  nikihl Appid "+n.getAppid().getName());
-					connection.addNetworkEvent(n, tid);
+					connection.addNetworkEvent(n,time);
 				}
 				ret= true;
 			} catch (Exception e) {

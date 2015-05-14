@@ -251,7 +251,10 @@ public class myHTTPServer extends Thread {
 	public static void  startServer()throws Exception{
 
 		ResourceManager.getInstance().init("C:\\Users\\Lenovo\\Desktop\\conf.xml");
-		DatabaseAccess.createDB("jdbc:sqlite:C://Users//Lenovo//Documents//understanding//myjava//Application//db//Monitordb.db");
+		//Class.forName("org.sqlite.JDBC");
+		Class.forName ("com.mysql.jdbc.Driver").newInstance ();
+		System.out.println("Data base driver loaded");
+		DatabaseAccess.createDB("jdbc:mysql://localhost/monitor?" +"user=root&password=root");
         Thread serv = new Thread(ServiceEngine.IDLE);
         serv.start();
         

@@ -14,7 +14,7 @@ public interface DbConnection {
 	
 	public void addTimeEvent(TimeEventData time) throws Exception ;
 	
-	public void addNetworkEvent(NetworkData n,int tid) throws Exception;
+	public void addNetworkEvent(NetworkData n,String tid) throws Exception;
 	
 	public void addAPP(ApplicationInfoData app) throws Exception;
 	
